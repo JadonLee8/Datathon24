@@ -8,6 +8,7 @@ import os
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm  # Import tqdm for progress bar
 import matplotlib.pyplot as plt
+import numpy as np  # Add this line at the top of your script
 
 # Define Carvana Dataset with .png Masks
 class CarvanaDataset(Dataset):
@@ -150,6 +151,131 @@ def display_prediction(model, images, masks, device, threshold=0.5):
     
     plt.show()
 
+def display_overlay_prediction(model, images, masks, device, threshold=0.5, hue_color=(1, 0, 0), opacity=0.9):
+    """
+    Display the original image with the predicted mask overlaid as a semi-transparent hue.
+
+    Parameters:
+        model (torch.nn.Module): The trained segmentation model.
+        images (torch.Tensor): The batch of input images from DataLoader.
+        masks (torch.Tensor): The batch of ground truth masks from DataLoader.
+        device (torch.device): The device (CPU or GPU) for the model.
+        threshold (float): Threshold to binarize the model output.
+        hue_color (tuple): RGB color for the overlay mask (default is red).
+        opacity (float): Opacity of the overlay color (0 = fully transparent, 1 = fully opaque).
+    """
+    model.eval()
+    
+    # Move images and masks to the device
+    images = images.to(device)
+    masks = masks.to(device)
+    
+    with torch.no_grad():
+        # Get the model's prediction
+        outputs = model(images)
+        predictions = torch.sigmoid(outputs).squeeze().cpu().numpy()
+        
+        # Ensure predictions is a 2D array for a single image visualization
+        if predictions.ndim == 3:
+            predictions = predictions[0]
+        elif predictions.ndim == 1:
+            predictions = predictions.reshape(images.shape[-2], images.shape[-1])
+
+        # Apply threshold to get a binary mask
+        binary_prediction = (predictions > threshold).astype(float)
+
+    # Display the input image with overlaid mask
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    
+    # Original image in RGB format
+    original_image = images[0].cpu().permute(1, 2, 0).numpy()
+    
+    # Apply semi-transparent overlay
+    overlay = original_image.copy()
+    overlay[..., 0] = np.where(binary_prediction, 
+                               (1 - opacity) * original_image[..., 0] + opacity * hue_color[0], 
+                               original_image[..., 0])
+    overlay[..., 1] = np.where(binary_prediction, 
+                               (1 - opacity) * original_image[..., 1] + opacity * hue_color[1], 
+                               original_image[..., 1])
+    overlay[..., 2] = np.where(binary_prediction, 
+                               (1 - opacity) * original_image[..., 2] + opacity * hue_color[2], 
+                               original_image[..., 2])
+
+    # Show original image
+    ax[0].imshow(original_image)
+    ax[0].set_title("Original Image")
+    ax[0].axis("off")
+    
+    # Show image with mask overlay
+    ax[1].imshow(overlay)
+    ax[1].set_title("Overlay Prediction with Reduced Opacity")
+    ax[1].axis("off")
+    
+    plt.show()
+
+def get_photo_prediction(model, images, device, threshold=0.5, hue_color=(1, 0, 0), opacity=0.5, file_path="overlay_prediction.png"):
+    """
+    Generate, save, and return the proportion of red area in an image with the predicted mask overlaid as a semi-transparent hue.
+
+    Parameters:
+        model (torch.nn.Module): The trained segmentation model.
+        images (torch.Tensor): The batch of input images from DataLoader.
+        device (torch.device): The device (CPU or GPU) for the model.
+        threshold (float): Threshold to binarize the model output.
+        hue_color (tuple): RGB color for the overlay mask (default is red).
+        opacity (float): Opacity of the overlay color (0 = fully transparent, 1 = fully opaque).
+        file_path (str): The path to save the resulting image.
+
+    Returns:
+        float: The proportion of the red area in the overlay relative to the total image area.
+    """
+    model.eval()
+    
+    # Move images to the device
+    images = images.to(device)
+    
+    with torch.no_grad():
+        # Get the model's prediction
+        outputs = model(images)
+        predictions = torch.sigmoid(outputs).squeeze().cpu().numpy()
+        
+        # Ensure predictions is a 2D array for a single image visualization
+        if predictions.ndim == 3:
+            predictions = predictions[0]
+        elif predictions.ndim == 1:
+            predictions = predictions.reshape(images.shape[-2], images.shape[-1])
+
+        # Apply threshold to get a binary mask
+        binary_prediction = (predictions > threshold).astype(float)
+
+    # Original image in RGB format
+    original_image = images[0].cpu().permute(1, 2, 0).numpy()
+    
+    # Apply semi-transparent overlay
+    overlay = original_image.copy()
+    overlay[..., 0] = np.where(binary_prediction, 
+                               (1 - opacity) * original_image[..., 0] + opacity * hue_color[0], 
+                               original_image[..., 0])
+    overlay[..., 1] = np.where(binary_prediction, 
+                               (1 - opacity) * original_image[..., 1] + opacity * hue_color[1], 
+                               original_image[..., 1])
+    overlay[..., 2] = np.where(binary_prediction, 
+                               (1 - opacity) * original_image[..., 2] + opacity * hue_color[2], 
+                               original_image[..., 2])
+
+    # Convert to 8-bit format for saving
+    overlay_image = (overlay * 255).astype(np.uint8)
+    Image.fromarray(overlay_image).save(file_path)
+    print(f"Overlay prediction saved as {file_path}")
+
+    # Calculate the proportion of red area
+    red_area = np.sum(binary_prediction)
+    total_area = binary_prediction.size
+    red_area_proportion = red_area / total_area
+
+    return red_area_proportion
+
 # Main
 if __name__ == "__main__":
     # Define Paths
@@ -189,4 +315,8 @@ if __name__ == "__main__":
     # Display Prediction Examples
 
     for images, masks in test_loader:
-        display_prediction(model, images, masks, device)
+        red_area_proportion = get_photo_prediction(model, images, device, threshold=0.5, hue_color=(1, 0, 0), opacity=0.5, file_path="output_overlay.png")
+        print(f"Proportion of red area: {red_area_proportion:.4f}")
+        input()
+        # display_overlay_prediction(model, images, masks, device, threshold=0.5, hue_color=(1, 0, 0))  # Using red hue
+        # display_prediction(model, images, masks, device)
