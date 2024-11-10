@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import torch
 import sys
 from flask_cors import CORS
@@ -48,5 +48,8 @@ def process():
     print(f"Percentage of red area in overlay image: {red_area_percentage:.2f}%")
 
     return jsonify(bounds=f"{bounds}",
-                   image_url=f"https://cdn.britannica.com/68/216668-050-DD3A9D0A/United-States-President-Donald-Trump"
-                             f"-2017.jpg?w=400&h=300&c=crop")
+                   image_url=f"http://127.0.0.1:5000/get-image")
+
+@app.route("/get-image", methods=["GET"])
+def get_image():
+    return send_file("output_overlay.png", mimetype="image/png")

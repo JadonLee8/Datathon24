@@ -2,9 +2,9 @@ import torch
 from network import UNet, png_to_prediction
 
 # Define paths for input image and output
-input_image_path = "Plantations_Segmentation/img/1.png"  # Replace with the path to your input image
-output_image_path = "output_overlay.png"      # Path to save the overlay image
-model_path = "trained_model.pth"              # Path to the saved model parameters
+input_image_path = "output/base/21_5.png"  # Path to car images in .png format
+output_image_path = "test2.png"  # Path to .png mask images
+model_path = "trained_model2.pth"              # Path to the saved model parameters
 
 # Set device to GPU if available, otherwise CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
