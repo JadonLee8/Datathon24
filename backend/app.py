@@ -1,22 +1,28 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 import torch
 import sys
-sys.path.append('/python/network.py')
+from flask_cors import CORS
+
+# sys.path.append('/python/network.py')
 from backend_net import UNet, png_to_prediction
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
+@app.route("/process-image", methods=["POST"])
+def process():
+    print("Processing image...")
+    data = request.get_json()
+    if not data or "bounds" not in data:
+        return jsonify(error="Invalid input"), 400
+    bounds = data["bounds"]
+    print(f"Received bounds: {bounds}")
 
-@app.route("/output")
-def output():
 
     # Define paths for input image and output
-    input_image_path = "Plantations_Segmentation/img/1.png"  # Replace with the path to your input image
-    output_image_path = "output_overlay.png"      # Path to save the overlay image
-    model_path = "trained_model.pth"              # Path to the saved model parameters
+    input_image_path = "1.png"  # Replace with the path to your input image
+    output_image_path = "output_overlay.png"  # Path to save the overlay image
+    model_path = "trained_model.pth"  # Path to the saved model parameters
 
     # Set device to GPU if available, otherwise CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,15 +34,19 @@ def output():
 
     # Run the prediction and save the overlay image
     red_area_proportion = png_to_prediction(
-    model=model,
-    file_path=input_image_path,
-    device=device,
-    threshold=0.5,
-    hue_color=(1, 0, 0),
-    opacity=0.9,
-    save_path=output_image_path
+        model=model,
+        file_path=input_image_path,
+        device=device,
+        threshold=0.5,
+        hue_color=(1, 0, 0),
+        opacity=0.9,
+        save_path=output_image_path
     )
 
     # Calculate and print the percentage of the red overlay
     red_area_percentage = red_area_proportion * 100
     print(f"Percentage of red area in overlay image: {red_area_percentage:.2f}%")
+
+    return jsonify(bounds=f"{bounds}",
+                   image_url=f"https://cdn.britannica.com/68/216668-050-DD3A9D0A/United-States-President-Donald-Trump"
+                             f"-2017.jpg?w=400&h=300&c=crop")

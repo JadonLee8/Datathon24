@@ -6,6 +6,8 @@ import { IoClose, IoMenu } from "react-icons/io5";
 import { AnimatePresence, motion } from "framer-motion";
 import ToastManager from "@/components/toast/ToastManager";
 import { ImageOverlayProps } from "react-leaflet";
+import { fetchUtil } from "@/app/fetch";
+
 const OpenStreetMap = dynamic(() => import("@/components/OpenStreetMap"), {
   ssr: false,
 });
@@ -24,12 +26,28 @@ export default function Home() {
     });
   }, [mapState]);
 
-  const processImage = () => {
+  const processImage = async () => {
     ToastManager.addToast("Processing Image...", "success", 1000);
+
+    const boundsCurr = mapState?.getBounds()!;
+    const boundsSend = [
+      boundsCurr.getSouthEast().lat,
+      boundsCurr.getNorthWest().lng,
+      boundsCurr.getNorthWest().lat,
+      boundsCurr.getSouthEast().lng,
+    ];
+
+    const response = await fetchUtil("http://127.0.0.1:5000/process-image", {
+      method: "POST",
+      body: {
+        bounds: boundsSend,
+      },
+    });
+    const res = await response.json();
+    console.log(res);
+
     setImageBounds(bounds!);
-    setImageUrl(
-      "https://cdn.britannica.com/68/216668-050-DD3A9D0A/United-States-President-Donald-Trump-2017.jpg?w=400&h=300&c=crop",
-    );
+    setImageUrl(res.image_url);
   };
 
   return (
