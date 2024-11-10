@@ -1,5 +1,6 @@
 import React from "react";
 import "./globals.css";
+import { ToastRenderer } from "@/components/toast/ToastRenderer";
 
 export default function RootLayout({
   children,
@@ -22,6 +23,7 @@ export default function RootLayout({
         ></script>
       </head>
       <body className="flex flex-col min-h-screen overflow-hidden">
+        <ToastRenderer />
         {children}
       </body>
     </html>

@@ -12,15 +12,22 @@ import {
   Marker,
   ZoomControl,
   ImageOverlay,
+  ImageOverlayProps,
 } from "react-leaflet";
 import { Map } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import dynamic from "next/dynamic";
 
+// interface ImageOverlayProps {
+//   bounds: [[number, number], [number, number]];
+//   url: string;
+// }
 export default function OpenStreetMapComponent({
   setRef,
+  imageOverlay,
 }: {
   setRef: (ref: Map | null) => void;
+  imageOverlay: ImageOverlayProps | null;
 }) {
   return (
     <div
@@ -40,6 +47,9 @@ export default function OpenStreetMapComponent({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        {imageOverlay && (
+          <ImageOverlay bounds={imageOverlay.bounds} url={imageOverlay.url} />
+        )}
       </MapContainer>
     </div>
   );
