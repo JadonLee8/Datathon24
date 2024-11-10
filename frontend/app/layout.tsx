@@ -21,7 +21,9 @@ export default function RootLayout({
           crossOrigin=""
         ></script>
       </head>
-      <body className="flex flex-col min-h-screen">{children}</body>
+      <body className="flex flex-col min-h-screen overflow-hidden">
+        {children}
+      </body>
     </html>
   );
 }
