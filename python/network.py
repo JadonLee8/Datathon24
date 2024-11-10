@@ -8,7 +8,7 @@ import os
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm  # Import tqdm for progress bar
 import matplotlib.pyplot as plt
-import numpy as np  # Add this line at the top of your script
+import numpy as np
 
 # Define Carvana Dataset with .png Masks
 class CarvanaDataset(Dataset):
@@ -363,50 +363,3 @@ def save_model_parameters(model, file_path="model_parameters.pth"):
     # Save the model's state dictionary (parameters)
     torch.save(model.state_dict(), file_path)
     print(f"Model parameters saved to {file_path}")
-
-# Main
-if __name__ == "__main__":
-    # Define Paths
-    image_dir = "Plantations_Segmentation/img"  # Path to car images in .png format
-    mask_dir = "Class_Segmentation"  # Path to .png mask images
-
-    # Define Transforms
-    transform = transforms.Compose([
-        transforms.Resize((128, 128)),  # Resize for quicker training
-        transforms.ToTensor(),
-    ])
-
-    # Load Dataset
-    full_dataset = CarvanaDataset(image_dir=image_dir, mask_dir=mask_dir, transform=transform)
-    print(len(full_dataset))
-    train_indices, test_indices = train_test_split(list(range(len(full_dataset))), train_size=0.5, random_state=42)
-    train_dataset = torch.utils.data.Subset(full_dataset, train_indices)
-    test_dataset = torch.utils.data.Subset(full_dataset, test_indices)
-
-    # DataLoader
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-
-    # Initialize Model, Loss, Optimizer
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = UNet().to(device)
-    criterion = nn.BCEWithLogitsLoss()  # Good for binary segmentation
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-    # Train and Test
-    num_epochs = 50
-    train(model, train_loader, optimizer, criterion, device, num_epochs=num_epochs)
-    test(model, test_loader, criterion, device)
-    # Display Prediction Example
-    example_image, example_mask = full_dataset[0]  # Get the first image-mask pair from the dataset
-    print(len(train_loader))
-    # Display Prediction Examples
-
-    for images, masks in test_loader:
-        red_area_proportion = png_to_prediction(model, "Plantations_Segmentation/img/1.png", device, threshold=0.5, hue_color=(1, 0, 0), opacity=0.9, save_path="output_overlay.png")
-        print(f"Proportion of red area: {red_area_proportion:.4f}")
-        # red_area_proportion = get_photo_prediction(model, images, device, threshold=0.5, hue_color=(1, 0, 0), opacity=0.9, file_path="output_overlay.png")
-        # print(f"Proportion of red area: {red_area_proportion:.4f}")
-        input()
-        # display_overlay_prediction(model, images, masks, device, threshold=0.5, hue_color=(1, 0, 0))  # Using red hue
-        # display_prediction(model, images, masks, device)
