@@ -153,8 +153,8 @@ def display_prediction(model, images, masks, device, threshold=0.5):
 # Main
 if __name__ == "__main__":
     # Define Paths
-    image_dir = "python/Plantations_Segmentation/img"  # Path to car images in .png format
-    mask_dir = "python/Class_Segmentation"  # Path to .png mask images
+    image_dir = "Plantations_Segmentation/img"  # Path to car images in .png format
+    mask_dir = "Class_Segmentation"  # Path to .png mask images
 
     # Define Transforms
     transform = transforms.Compose([
